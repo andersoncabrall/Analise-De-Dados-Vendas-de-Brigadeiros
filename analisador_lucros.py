@@ -1,4 +1,5 @@
 import pandas as pd
+import seaborn as sns
 import matplotlib.pyplot as plt
 
 print("Analisador de Lucro - Brigadeiros")
@@ -37,27 +38,75 @@ for qtd in quantidades:
     lucro_total = receita_total - custo_total
     print(f"{qtd:^10} | R$ {custo_total:6.2f} | R$ {receita_total:6.2f} | R$ {lucro_total:6.2f}")
 
+sns.set_style("whitegrid")
 plt.figure(figsize=(12, 4))
 
 plt.subplot(1, 2, 1)
+ingredientes_com_custo = tabela[tabela['custo_por_brigadeiro'] > 0].sort_values('custo_por_brigadeiro', ascending=False)
 
-ingredientes_com_custo = tabela[tabela['custo_por_brigadeiro'] > 0]
-plt.pie(ingredientes_com_custo['custo_por_brigadeiro'], 
-        labels=ingredientes_com_custo['ingrediente'], 
-        autopct='%1.1f%%')
+sns.barplot(data=ingredientes_com_custo, 
+            x='custo_por_brigadeiro', 
+            y='ingrediente',
+            palette='Blues_r',
+            hue='ingrediente', 
+            legend=False)
 
-plt.title('Porcentagem de Custos por Unidade de Brigadeiro')
+plt.title('Distribuição de Custos por Ingrediente (por brigadeiro)')
+plt.xlabel('Custo (R$)')
+plt.ylabel('Ingrediente')
+for i, custo in enumerate(ingredientes_com_custo['custo_por_brigadeiro']):
+    plt.text(custo + 0.005, i, f'R$ {custo:.2f}', va='center', fontsize=9)
+
 plt.subplot(1, 2, 2)
+projecao_df = pd.DataFrame({
+    'Quantidade': quantidades,
+    'Lucro': [lucro_por_brigadeiro * qtd for qtd in quantidades]
+})
 
-lucros = [lucro_por_brigadeiro * qtd for qtd in quantidades]
-plt.bar([str(qtd) for qtd in quantidades], lucros, color='green')
+sns.barplot(data=projecao_df, 
+            x='Quantidade', 
+            y='Lucro',
+            palette='Greens',
+            hue='Quantidade',
+            legend=False)
 
-plt.title('Lucro por Quantidade')
+plt.title('Lucro por Quantidade Vendida')
 plt.xlabel('Quantidade de Brigadeiros')
 plt.ylabel('Lucro Total (R$)')
 
-for i, lucro in enumerate(lucros):
-    plt.text(i, lucro + 10, f'R$ {lucro:.0f}', ha='center')
+for i, lucro in enumerate(projecao_df['Lucro']):
+    plt.text(i, lucro + 10, f'R$ {lucro:.0f}', ha='center', fontsize=10)
+
+plt.tight_layout()
+plt.show()
+
+plt.figure(figsize=(12, 6))
+
+comparacao_df = pd.DataFrame({
+    'Quantidade': quantidades,
+    'Custo Total': [custo_total_brigadeiro * qtd for qtd in quantidades],
+    'Receita': [preco_venda * qtd for qtd in quantidades],
+    'Lucro': [lucro_por_brigadeiro * qtd for qtd in quantidades]
+})
+comparacao_melted = comparacao_df.melt(id_vars='Quantidade', 
+                                        value_vars=['Custo Total', 'Receita', 'Lucro'],
+                                        var_name='Tipo', 
+                                        value_name='Valor (R$)')
+sns.barplot(data=comparacao_melted,
+            x='Quantidade',
+            y='Valor (R$)',
+            hue='Tipo',
+            palette='Set2')
+
+plt.title('Comparação: Custo, Receita e Lucro por Quantidade')
+plt.xlabel('Quantidade de Brigadeiros')
+plt.ylabel('Valor (R$)')
+
+for i, bar in enumerate(plt.gca().patches):
+    height = bar.get_height()
+    if height > 0:
+        plt.text(bar.get_x() + bar.get_width()/2., height + 20,
+                f'R$ {height:.0f}', ha='center', va='bottom', fontsize=8)
 
 plt.tight_layout()
 plt.show()
@@ -73,4 +122,4 @@ print(f"Ingrediente com maior custo: {ingrediente_mais_caro['ingrediente']}")
 print(f"Ingrediente com menor custo: {ingrediente_mais_barato['ingrediente']}")
 print(f"- Cada brigadeiro da R$ {lucro_por_brigadeiro:.2f} de lucro")
 print(f"- Para lucrar R$ 100,00: vender {100/lucro_por_brigadeiro:.0f} brigadeiros")
-print(f"- Para lucrar R$ 500,00: vender {500/lucro_por_brigadeiro:.0f} brigadeiros")
+print(f"- Para lucrar R$ 500,00: vender {500/lucro_brigadeiro:.0f} brigadeiros")
